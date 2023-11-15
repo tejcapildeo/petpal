@@ -3,12 +3,12 @@ from .models import Notification
 
 class NotificationSerializer(serializers.ModelSerializer):
     comment = serializers.HyperlinkedRelatedField(
-        view_name='comment-lists',  # Replace with your comment detail view name
+        view_name='comment-single', 
         read_only=True
     )
     
     application = serializers.HyperlinkedRelatedField(
-        view_name='application-detail',  # Replace with your application detail view name
+        view_name='application-detail', 
         read_only=True
     )
 

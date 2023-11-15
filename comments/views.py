@@ -1,11 +1,13 @@
 from django.shortcuts import get_object_or_404
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework import status
 
 from accounts.models import Shelter
-from .models import Comment
-from .serializers import ApplicationCommentSerializer, ShelterCommentSerializer
+from applications.application import Application
+from .models import ApplicationComment, Comment
+from .serializers import ApplicationCommentSerializer, ShelterCommentSerializer, SpecificCommentSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -29,20 +31,20 @@ class ShelterCommentsListCreate(ListCreateAPIView):
         shelter = get_object_or_404(Shelter, pk=self.kwargs['pk'])
         serializer.save(shelter=shelter, user=self.request.user)
 
-# class ApplicationCommentsListCreate(ListCreateAPIView):
-#     serializer_class = ApplicationCommentSerializer
-#     permission_classes = [IsAuthenticated]
+class ApplicationCommentsListCreate(ListCreateAPIView):
+    serializer_class = ApplicationCommentSerializer
+    permission_classes = [IsAuthenticated]
     
-#     def get_queryset(self): 
-#         #obtain comments on the speciifc application
-#         return Comment.objects.filter(application=self.kwargs['pk'])
+    def get_queryset(self): 
+        #obtain comments on the speciifc application
+        return Comment.objects.filter(application=self.kwargs['pk'])
     
-#     def perform_create(self, serializer):
-#         application = get_object_or_404(Application, pk=self.kwargs['pk'])
-#         if application.owner == self.request.user or application.shelter == self.request.user:
-#             serializer.save(application=application)
-#         else:
-#             raise PermissionDenied("You are not allowed to comment on this application")
+    def perform_create(self, serializer):
+        application = get_object_or_404(Application, pk=self.kwargs['pk'])
+        if application.pet_seeker.user == self.request.user or application.shelter.user == self.request.user:
+            serializer.save(application=application, user=self.request.user)
+        else:
+            raise PermissionDenied("You are not allowed to comment on this application")
 
 # class RetreiveShelterComments(APIView):
 #     permission_classes = [IsAuthenticated]
@@ -64,20 +66,28 @@ class RetreiveShelterComments(ListAPIView):
         #obtain comments on the speciifc shelter
         return Comment.objects.filter(shelter=self.kwargs['pk']).order_by('-created_at')
 
+#used for when we click on comment link for notification
+class RetrieveSingleCommentView(RetrieveAPIView):
+    serializer_class = SpecificCommentSerializer
+    def get_queryset(self):
+        comment_id = self.kwargs.get('pk')
+        queryset = Comment.objects.filter(id=comment_id, shelter__user=self.request.user)
+        return queryset
+
 
 
 # class RetreiveApplicationComments(APIView):
 #     serializer_class = ApplicationCommentSerializer
 #     permission_classes = [IsAuthenticated]
-#     def get(self, request):
+#     def get(self, request, *args, **kwargs):
 #         application = get_object_or_404(Application, pk=self.kwargs['pk'])
-#         comments = Comment.objects.filter(application=self.kwargs['pk']).order_by('-created_at')
-#         if application.owner == self.request.user or application.shelter == self.request.user:
+#         comments = ApplicationComment.objects.filter(application=self.kwargs['pk']).order_by('-created_at')
+#         if application.pet_seeker.user == self.request.user or application.shelter.user == self.request.user:
 #             return Response([
 #             {
 #                 'text': comment.text,
 #                 'user': comment.user,
-#                 'shelter': comment.shelter,
+#                 'shelter': comment.application.shelter,
 #                 'application':comment.application,
 #                 'created on': comment.created_at,
 #              }
@@ -85,3 +95,14 @@ class RetreiveShelterComments(ListAPIView):
 #         else:
 #             raise PermissionDenied("You are not allowed to view comments on this application")
         
+
+class RetreiveApplicationComments(ListAPIView):
+    serializer_class = ApplicationCommentSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        application = get_object_or_404(Application, pk=self.kwargs['pk'])
+        if application.pet_seeker.user == self.request.user or application.shelter.user == self.request.user:
+            return ApplicationComment.objects.filter(application=self.kwargs['pk']).order_by('-created_at')
+        else:
+            raise PermissionDenied("You are not allowed to view comments on this application")
+
