@@ -4,6 +4,13 @@ from accounts.models import Shelter
 
 # Create your models here.
 class PetListing(models.Model):
+    class Status(models.TextChoices):
+        """An Enum for various listing statuses. Names are Self-Explanatory."""
+        AVAILABLE = 'Available'
+        DENIED = 'Denied'
+        PENDING = 'Pending'
+        WITHDRAWN = 'Adopted'
+
     name=models.CharField(max_length=120)
     #need to double check that image is done properly
     image=models.ImageField(blank=True)    #need to change the upload_to attribute

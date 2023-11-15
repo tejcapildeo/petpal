@@ -2,7 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from applications.application import Application
 from accounts.models import Seeker, Shelter
-from petlistings.models import PetListing
+# from petlistings.models import PetListing
 from .serializers import ApplicationSerializer, ApplicationStatusUpdateSerializer
 from .permissions import HasApplicationPermission
 from accounts.api.permissions import IsShelterUser, IsSeekerUser
@@ -23,10 +23,11 @@ class ApplicationCreateView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         pet_listing_id = serializer.validated_data.get('pet_listing').id
-        pet_listing = PetListing.objects.get(id=pet_listing_id)
+        # pet_listing = PetListing.objects.get(id=pet_listing_id)
 
-        if pet_listing.status != PetListing.Status.AVAILABLE:
-            return Response({"error": "This pet is not available for adoption."}, status=status.HTTP_400_BAD_REQUEST)
+        # TODO: RETURN ONCE CHANGES ARE MADE TO PETLISTING
+        # if pet_listing.status != PetListing.status.AVAILABLE:
+        #     return Response({"error": "This pet is not available for adoption."}, status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
