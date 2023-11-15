@@ -24,7 +24,7 @@ class Application(models.Model):
 
     pet_seeker = models.ForeignKey(Seeker, on_delete=models.CASCADE, null=False)
     pet_listing = models.ForeignKey(PetListing, on_delete=models.CASCADE, null=False)
-    shelter = models.ForeignKey(Shelter, on_delete=models.CASCADE, null=True) #TODO: PUT NULL=FALSE AFTER CHANGES
+    shelter = models.ForeignKey(Shelter, on_delete=models.CASCADE, null=False) #TODO: PUT NULL=FALSE AFTER CHANGES
     form = models.JSONField(default=dict)
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)

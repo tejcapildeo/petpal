@@ -26,25 +26,26 @@ class ApplicationsView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixin
         pet_listing_id = serializer.validated_data.get('pet_listing').id
         pet_listing = PetListing.objects.get(id=pet_listing_id)
 
-        if pet_listing.status != PetListing.status.AVAILABLE:
+        if pet_listing.status != PetListing.Status.AVAILABLE:
             return Response({"error": "This pet is not available for adoption."}, status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
+        application = serializer.instance
 
         user = request.user
         if user.is_seeker:
             sender = user
-            recipient = Application.shelter.user
+            recipient = application.shelter.user
         else:
-            sender = Application.shelter.user
+            sender = application.shelter.user
             recipient = user
 
         notification_data = {
             "sender": sender,
             "recipient": recipient,
-            "message": "An application has been created for {}".format(serializer.instance.pet_listing.name),
+            "message": "An application has been created for {}".format(application.pet_listing.name),
             "comment": None,
-            "application": serializer.instance
+            "application": application
         }
         notification_serializer = NotificationSerializer(data=notification_data)
         
@@ -58,19 +59,18 @@ class ApplicationsView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixin
         application = self.get_object()
         current_user = request.user
         new_status = request.data.get('status')
-
         if application.pet_seeker.user == current_user:
             if application.status != Application.Status.PENDING and application.status != Application.Status.ACCEPTED:
-                return Response({"error": "You can only withdraw a pending or accepted application."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Pet seeker can only update the status of an application from pending or accepted to withdrawn."}, status=status.HTTP_400_BAD_REQUEST)
             if new_status != Application.Status.WITHDRAWN:
-                return Response({"error": "You can only change status to withdrawn."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Pet seeker can only update the status of an application from pending or accepted to withdrawn."}, status=status.HTTP_400_BAD_REQUEST)
             notification = Notification.objects.get(application=application, sender=application.pet_seeker.user)
 
         elif application.shelter.user == current_user:
             if application.status != Application.Status.PENDING:
-                return Response({"error": "You can only accept or deny a pending application."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Shelter can only update the status of an application from pending to accepted or denied."}, status=status.HTTP_400_BAD_REQUEST)
             if new_status not in [Application.Status.ACCEPTED, Application.Status.DENIED]:
-                return Response({"error": "Invalid status update."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Shelter can only update the status of an application from pending to accepted or denied."}, status=status.HTTP_400_BAD_REQUEST)
             notification = Notification.objects.get(application=application, sender=application.shelter.user)
         
         else:
@@ -81,7 +81,7 @@ class ApplicationsView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixin
 
         return super().update(request, *args, **kwargs)
     
-    def list(self):
+    def list(self, request, *args, **kwargs):
         user = self.request.user
         if user.is_seeker:
             seeker = Seeker.objects.get(user=user)
@@ -100,4 +100,4 @@ class ApplicationsView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixin
 
         serializer = ApplicationSerializer(applications, many=True)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.status.HTTP_201_CREATED, headers=headers)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
