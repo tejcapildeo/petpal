@@ -1,6 +1,6 @@
 from django.urls import path
 
-from accounts.api.views import SeekerRegisterView, ShelterListView, ShelterProfileView, ShelterRegisterView, UserDeleteView
+from accounts.api.views import SeekerProfileView, SeekerRegisterView, ShelterListView, ShelterProfileView, ShelterRegisterView, UserDeleteView
 from accounts.api.views import LogoutView, SeekerOnlyView, ShelterOnlyView, UserUpdateView
 urlpatterns = [
     path('register/seeker/', SeekerRegisterView.as_view()),
@@ -10,6 +10,7 @@ urlpatterns = [
     path('shelter/dashboard/', ShelterOnlyView.as_view(), name='shelter-dashboard'),
     path("update/user/", UserUpdateView.as_view(), name='user-update'),
     path('shelter/<int:pk>/', ShelterProfileView.as_view(), name='shelter-profile'),
+    path('seeker/<int:pk>/profile/', SeekerProfileView.as_view(), name='seeker-profile'),
     path('shelters/', ShelterListView.as_view(), name='shelter-list'),
     path('delete/user/', UserDeleteView.as_view(), name='user-update' ),
 ]

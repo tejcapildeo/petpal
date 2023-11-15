@@ -113,6 +113,12 @@ class ShelterProfileSerializer(serializers.ModelSerializer):
         model = Shelter
         fields = ['user', 'id', 'shelter_name', 'phone', 'location', 'mission']
 
+class SeekerProfileSerializer(serializers.ModelSerializer):
+    user = UserProfileSerializer()
+    class Meta:
+        model = Seeker
+        fields = '__all__'
+
 
 #below is the serializers for deleting a shelter or a seeker
 

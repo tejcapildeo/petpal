@@ -1,34 +1,39 @@
+from applications.application import Application
 from petlistings.models.petlisting import PetListing
 from petlistings.serializers import PetListingSerializer
 from rest_framework import generics, status
 from rest_framework.response import Response
 
 from accounts.models import Seeker, Shelter
-from .serializers import SeekerDeleteSerializer, SeekerRegisterSerializer, SeekerUpdateSerializer, ShelterDeleteSerializer, ShelterProfileSerializer, ShelterRegisterSerializer, ShelterUpdateSerializer, UserSerializer
+from .serializers import SeekerDeleteSerializer, SeekerProfileSerializer, SeekerRegisterSerializer, SeekerUpdateSerializer, ShelterDeleteSerializer, ShelterProfileSerializer, ShelterRegisterSerializer, ShelterUpdateSerializer, UserSerializer
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsSeekerUser, IsShelterUser
+from .permissions import IsSeekerUser, IsShelterUser, SeekerShelterApplicationPair
 
 class SeekerRegisterView(generics.GenericAPIView):
     serializer_class = SeekerRegisterSerializer
     def post(self, request, *args, **kwargs):
+        #save the seeker
         serializer=self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        #send response
         return Response({
             "user":UserSerializer(user, context=self.get_serializer_context()).data,
-            "message":"account created successfully"
+            "message":"account successfully created "
         })
 
 class ShelterRegisterView(generics.GenericAPIView):
     serializer_class = ShelterRegisterSerializer
     def post(self, request, *args, **kwargs):
+        #save the seeker
         serializer=self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        #send response
         return Response({
             "user":UserSerializer(user, context=self.get_serializer_context()).data,
-            "message":"account created successfully"
+            "message":"account successfully created "
         })
 
 class LogoutView(APIView):
@@ -90,6 +95,12 @@ class ShelterProfileView(generics.RetrieveAPIView):
 
         return Response(data, status=status.HTTP_200_OK)
 
+class SeekerProfileView(generics.RetrieveAPIView):
+    #can only be seen by shelters that have an active applications with this pk which is a seeker
+    permission_classes = [IsAuthenticated&IsShelterUser&SeekerShelterApplicationPair]
+    queryset = Seeker.objects.all()
+    serializer_class= SeekerProfileSerializer
+
 class ShelterListView(generics.ListAPIView):
     queryset = Shelter.objects.all()
     serializer_class = ShelterProfileSerializer
@@ -103,22 +114,21 @@ class UserDeleteView(generics.DestroyAPIView):
     def delete(self, request, *args, **kwargs):
         user = self.get_object()
         if user.is_seeker:
+            #delete seeker
             seeker = Seeker.objects.get(user=user)
-            # get the applications
-            #delete the notifications for the seeker side but not the shelter side (probably have duplicate notifications one for seeker and one for shelter)
+
             seeker_serializer = SeekerDeleteSerializer(seeker)
             seeker.delete()
-            #also delete the applications and notifications
             user.delete()
             return Response(seeker_serializer.data, status=status.HTTP_204_NO_CONTENT)
         elif user.is_shelter:
+            #delete shelter
             shelter = Shelter.objects.get(user=user)
-            # get all the pet listings
-            #delete the notifications for the seeker side but not the shelter side (probably have duplicate notifications one for seeker and one for shelter)
             shelter_serializer = ShelterDeleteSerializer(shelter)
+            
             shelter.delete()
-            #also delete the other stuff
             user.delete()
+
             return Response(shelter_serializer.data, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response("Invalid User Type", status=status.HTTP_400_BAD_REQUEST)
