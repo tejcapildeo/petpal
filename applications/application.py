@@ -1,5 +1,5 @@
 from django.db import models
-from accounts.models import Seeker
+from accounts.models import Seeker, Shelter
 from petlistings.models import PetListing
 
 
@@ -24,13 +24,8 @@ class Application(models.Model):
 
     pet_seeker = models.ForeignKey(Seeker, on_delete=models.CASCADE, null=False)
     pet_listing = models.ForeignKey(PetListing, on_delete=models.CASCADE, null=False)
+    shelter = models.ForeignKey(Shelter, on_delete=models.CASCADE, null=True) #TODO: PUT NULL=FALSE AFTER CHANGES
     form = models.JSONField(default=dict)
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    # Setter - Status
-    def SetStatus(self, status: Status) -> None:
-        """Sets the Status of the Application. Refer to the Status Enum."""
-        self.Status = status
-        self.save()
