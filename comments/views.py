@@ -11,6 +11,7 @@ from .serializers import ApplicationCommentSerializer, ShelterCommentSerializer,
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+
 #import Shelter model
 #import Application model
 
@@ -22,6 +23,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 class ShelterCommentsListCreate(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ShelterCommentSerializer
+    pagination_class= PageNumberPagination
     
     def get_queryset(self): 
         #obtain comments on the speciifc shelter
@@ -34,6 +36,7 @@ class ShelterCommentsListCreate(ListCreateAPIView):
 class ApplicationCommentsListCreate(ListCreateAPIView):
     serializer_class = ApplicationCommentSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class= PageNumberPagination
     
     def get_queryset(self): 
         #obtain comments on the speciifc application
@@ -62,6 +65,7 @@ class ApplicationCommentsListCreate(ListCreateAPIView):
 
 class RetreiveShelterComments(ListAPIView):
     serializer_class = ShelterCommentSerializer
+    pagination_class= PageNumberPagination
     def get_queryset(self): 
         #obtain comments on the speciifc shelter
         return Comment.objects.filter(shelter=self.kwargs['pk']).order_by('-created_at')

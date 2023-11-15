@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from ..models import PetListing
 from ..serializers import PetListingSerializer, SortFilterSerializer
 from accounts.models import Shelter
+from rest_framework.pagination import PageNumberPagination
 
 class PetListingRetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
     serializer_class = PetListingSerializer
@@ -16,6 +17,7 @@ class PetListingCreate(ListCreateAPIView):
     permission_classes= [IsAuthenticated&IsShelterUser]
     serializer_class = PetListingSerializer
     queryset = PetListing.objects.all()
+    pagination_class= PageNumberPagination
     def perform_create(self, serializer):
         serializer.save(shelter=Shelter.objects.get(user=self.request.user))
     
@@ -23,6 +25,7 @@ class PetListingCreate(ListCreateAPIView):
 class PetListingSearch(ListAPIView):
     serializer_class = SortFilterSerializer
     queryset = PetListing.objects.all()
+    pagination_class= PageNumberPagination
     
     def get_queryset(self):
         queryset = PetListing.objects.all()
