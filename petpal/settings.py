@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
+    'applications',
     'petlistings',
     'notifications',
     'rest_framework',
@@ -137,8 +138,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
     ),
     
-    'DEFAULT_PAGINATION_CLASS': 'apps.core.pagination.StandardResultsSetPagination'
-    'PAGE_SIZE': 100,
+    #'DEFAULT_PAGINATION_CLASS': 'apps.core.pagination.StandardResultsSetPagination',
+    #'PAGE_SIZE': 100,
 }
 
 AUTH_USER_MODEL="accounts.User"
