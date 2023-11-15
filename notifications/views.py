@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from accounts.models import User
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 # Create your views here.
 
 # class NotificationCreate(CreateAPIView):
@@ -34,18 +35,21 @@ from rest_framework import status
 class NotificationListView(ListAPIView):
     serializer_class  = NotificationSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class= PageNumberPagination
     def get_queryset(self):
         return Notification.objects.filter(recipient=self.request.user).order_by('-creation_date')
 
 class ReadNotificationListView(ListAPIView):
     serializer_class  = NotificationSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class= PageNumberPagination
     def get_queryset(self):
         return Notification.objects.filter(recipient=self.request.user, is_read=True).order_by('-creation_date')
 
 class UnreadNotificationListView(ListAPIView):
     serializer_class  = NotificationSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class= PageNumberPagination
     def get_queryset(self):
         return Notification.objects.filter(recipient=self.request.user, is_read=False).order_by('-creation_date')
 

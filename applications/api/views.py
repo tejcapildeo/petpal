@@ -11,6 +11,7 @@ from notifications.models import Notification
 from rest_framework import viewsets, mixins
 
 
+
 class ApplicationView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     permission_classes = [IsShelterUser|IsSeekerUser, HasApplicationPermission]
     queryset = Application.objects.all()
