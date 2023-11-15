@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import status
 from rest_framework.response import Response
 from applications.application import Application
 from accounts.models import Seeker, Shelter
@@ -9,12 +9,14 @@ from accounts.api.permissions import IsShelterUser, IsSeekerUser
 from notifications.serializers import NotificationSerializer, NotificationUpdateSerializer
 from notifications.models import Notification
 from rest_framework import viewsets, mixins
+from rest_framework.pagination import PageNumberPagination
 
 
-class ApplicationView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+class ApplicationsView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = [IsShelterUser|IsSeekerUser, HasApplicationPermission]
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
+    pagination_class= PageNumberPagination
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -78,12 +80,7 @@ class ApplicationView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins
 
         return super().update(request, *args, **kwargs)
     
-
-class ApplicationsViewList(generics.ListAPIView):
-    permission_classes = [IsSeekerUser|IsShelterUser]
-    serializer_class = ApplicationSerializer
-
-    def get_queryset(self):
+    def list(self):
         user = self.request.user
         if user.is_seeker:
             seeker = Seeker.objects.get(user=user)
@@ -92,12 +89,14 @@ class ApplicationsViewList(generics.ListAPIView):
             shelter = Shelter.objects.get(user=user)
             applications = Application.objects.filter(shelter=shelter)
 
-        status = self.request.query_params.get('status', None)
-        if status is not None:
-            applications = applications.filter(status=status)
+        app_status = self.request.query_params.get('status', None)
+        if app_status is not None:
+            applications = applications.filter(status=app_status)
 
         ordering = self.request.query_params.get('ordering')
         if ordering:
             applications = applications.order_by(ordering)
 
-        return applications
+        serializer = ApplicationSerializer(applications, many=True)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.status.HTTP_201_CREATED, headers=headers)

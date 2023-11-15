@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import ApplicationView, ApplicationsViewList, ApplicationCreateView
+from .views import ApplicationsView
 
 urlpatterns = [ 
-    path('applications/<int:pk>/', ApplicationView.as_view(), name="application"),
-    path('applications/', ApplicationsViewList.as_view()),
+    path('applications/', ApplicationsView.as_view({'get': 'list', 'post': 'create', 'post': 'update'}), name="applications"),
+    path('application/<int:pk>/', ApplicationsView.as_view({'get': 'retrieve'}), name="application")
 ]
