@@ -5,8 +5,9 @@ from .models import PetListing
 class PetListingSerializer(ModelSerializer):
     class Meta:
         model = PetListing
-        fields = '__all__'
+        exclude = ['shelter']
         #maybe try to set an initial value for status
+        
 
 class SortFilterSerializer(Serializer):
     status = CharField(required=False)
