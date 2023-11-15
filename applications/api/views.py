@@ -2,19 +2,17 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from applications.application import Application
 from accounts.models import Seeker, Shelter
-# from petlistings.models import PetListing
-from .serializers import ApplicationSerializer, ApplicationStatusUpdateSerializer
+from petlistings.models import PetListing
+from .serializers import ApplicationSerializer
 from .permissions import HasApplicationPermission
 from accounts.api.permissions import IsShelterUser, IsSeekerUser
+from notifications.serializers import NotificationSerializer, NotificationUpdateSerializer
+from notifications.models import Notification
+from rest_framework import viewsets, mixins
 
 
-class ApplicationView(generics.RetrieveAPIView):
+class ApplicationView(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     permission_classes = [IsShelterUser|IsSeekerUser, HasApplicationPermission]
-    queryset = Application.objects.all()
-    serializer_class = ApplicationSerializer
-
-
-class ApplicationCreateView(generics.CreateAPIView):
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
 
@@ -23,21 +21,36 @@ class ApplicationCreateView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         pet_listing_id = serializer.validated_data.get('pet_listing').id
-        # pet_listing = PetListing.objects.get(id=pet_listing_id)
+        pet_listing = PetListing.objects.get(id=pet_listing_id)
 
-        # TODO: RETURN ONCE CHANGES ARE MADE TO PETLISTING
-        # if pet_listing.status != PetListing.status.AVAILABLE:
-        #     return Response({"error": "This pet is not available for adoption."}, status=status.HTTP_400_BAD_REQUEST)
+        if pet_listing.status != PetListing.status.AVAILABLE:
+            return Response({"error": "This pet is not available for adoption."}, status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
+
+        user = request.user
+        if user.is_seeker:
+            sender = user
+            recipient = Application.shelter.user
+        else:
+            sender = Application.shelter.user
+            recipient = user
+
+        notification_data = {
+            "sender": sender,
+            "recipient": recipient,
+            "message": "An application has been created for {}".format(serializer.instance.pet_listing.name),
+            "comment": None,
+            "application": serializer.instance
+        }
+        notification_serializer = NotificationSerializer(data=notification_data)
+        
+        if notification_serializer.is_valid():
+            notification_serializer.save()
+
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-
-class ApplicationStatusUpdateView(generics.UpdateAPIView):
-    queryset = Application.objects.all()
-    serializer_class = ApplicationStatusUpdateSerializer
-
+    
     def update(self, request, *args, **kwargs):
         application = self.get_object()
         current_user = request.user
@@ -48,47 +61,36 @@ class ApplicationStatusUpdateView(generics.UpdateAPIView):
                 return Response({"error": "You can only withdraw a pending or accepted application."}, status=status.HTTP_400_BAD_REQUEST)
             if new_status != Application.Status.WITHDRAWN:
                 return Response({"error": "You can only change status to withdrawn."}, status=status.HTTP_400_BAD_REQUEST)
+            notification = Notification.objects.get(application=application, sender=application.pet_seeker.user)
 
         elif application.shelter.user == current_user:
             if application.status != Application.Status.PENDING:
                 return Response({"error": "You can only accept or deny a pending application."}, status=status.HTTP_400_BAD_REQUEST)
             if new_status not in [Application.Status.ACCEPTED, Application.Status.DENIED]:
                 return Response({"error": "Invalid status update."}, status=status.HTTP_400_BAD_REQUEST)
-
+            notification = Notification.objects.get(application=application, sender=application.shelter.user)
+        
         else:
             return Response({"error": "You do not have permission to update this application."}, status=status.HTTP_403_FORBIDDEN)
 
+        notification_serializer = NotificationUpdateSerializer(data=notification)
+        notification_serializer.save()
+
         return super().update(request, *args, **kwargs)
-
-
-class ShelterApplicationsViewList(generics.ListAPIView):
-    permission_classes = [IsShelterUser]
-    serializer_class = ApplicationSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        shelter = Shelter.objects.get(user=user)
-        applications = Application.objects.filter(shelter=shelter)
-
-        status = self.request.query_params.get('status', None)
-        if status is not None:
-            applications = applications.filter(status=status)
-
-        ordering = self.request.query_params.get('ordering')
-        if ordering:
-            applications = applications.order_by(ordering)
-
-        return applications
     
 
-class SeekerApplicationsViewList(generics.ListAPIView):
-    permission_classes = [IsSeekerUser]
+class ApplicationsViewList(generics.ListAPIView):
+    permission_classes = [IsSeekerUser|IsShelterUser]
     serializer_class = ApplicationSerializer
 
     def get_queryset(self):
         user = self.request.user
-        seeker = Seeker.objects.get(user=user)
-        applications = Application.objects.filter(pet_seeker=seeker)
+        if user.is_seeker:
+            seeker = Seeker.objects.get(user=user)
+            applications = Application.objects.filter(pet_seeker=seeker)
+        else:
+            shelter = Shelter.objects.get(user=user)
+            applications = Application.objects.filter(shelter=shelter)
 
         status = self.request.query_params.get('status', None)
         if status is not None:

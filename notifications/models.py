@@ -1,5 +1,4 @@
 from django.db import models
-
 from accounts.models import User
 from comments.models import Comment
 from applications.application import Application

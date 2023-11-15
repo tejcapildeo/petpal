@@ -8,7 +8,7 @@ class NotificationSerializer(serializers.ModelSerializer):
     )
     
     application = serializers.HyperlinkedRelatedField(
-        view_name='application-detail', 
+        view_name='application', 
         read_only=True
     )
 

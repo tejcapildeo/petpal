@@ -3,7 +3,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework import status
-
+from notifications.serializers import NotificationSerializer
 from accounts.models import Shelter
 from applications.application import Application
 from .models import ApplicationComment, Comment
@@ -33,6 +33,26 @@ class ShelterCommentsListCreate(ListCreateAPIView):
         shelter = get_object_or_404(Shelter, pk=self.kwargs['pk'])
         serializer.save(shelter=shelter, user=self.request.user)
 
+        user = self.request.user
+        if user.is_seeker:
+            sender = user
+            recipient = Application.shelter.user
+        else:
+            sender = Application.shelter.user
+            recipient = user
+
+        notification_data = {
+            "sender": sender,
+            "recipient": recipient,
+            "message": "A new comment is available on the application for {}".format(serializer.instance.pet_listing.name),
+            "comment": None,
+            "application": serializer.instance
+        }
+            
+        notification_serializer = NotificationSerializer(data=notification_data)
+        if notification_serializer.is_valid():
+            notification_serializer.save()
+
 class ApplicationCommentsListCreate(ListCreateAPIView):
     serializer_class = ApplicationCommentSerializer
     permission_classes = [IsAuthenticated]
@@ -46,6 +66,27 @@ class ApplicationCommentsListCreate(ListCreateAPIView):
         application = get_object_or_404(Application, pk=self.kwargs['pk'])
         if application.pet_seeker.user == self.request.user or application.shelter.user == self.request.user:
             serializer.save(application=application, user=self.request.user)
+
+            user = self.request.user
+            if user.is_seeker:
+                sender = user
+                recipient = Application.shelter.user
+            else:
+                sender = Application.shelter.user
+                recipient = user
+
+            notification_data = {
+                "sender": sender,
+                "recipient": recipient,
+                "message": "A new comment is available on the application for {}".format(serializer.instance.pet_listing.name),
+                "comment": None,
+                "application": serializer.instance
+            }
+
+            notification_serializer = NotificationSerializer(data=notification_data)
+            if notification_serializer.is_valid():
+                notification_serializer.save()
+
         else:
             raise PermissionDenied("You are not allowed to comment on this application")
 

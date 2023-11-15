@@ -11,7 +11,7 @@ class ApplicationSerializer(ModelSerializer):
     class Meta:
         model = Application
         fields = ['pet_seeker', 'pet_listing', 'shelter', 'status', 'created_at', 'updated_at', 'form', 'comments']
-    
+
     # def validate_form(self, data):
     #     if not data:
     #         raise ValidationError("Form data is required.")
@@ -65,11 +65,3 @@ class ApplicationSerializer(ModelSerializer):
     #         raise ValidationError({"age": "Applicant must be at least 18 years old."})
 
     #     return data
-
-
-class ApplicationStatusUpdateSerializer(ModelSerializer):
-    comments = ApplicationCommentSerializer(many=True, read_only=True)
-    class Meta:
-        model = Application
-        fields = ['pet_seeker', 'pet_listing', 'shelter', 'form', 'status', 'created_at', 'updated_at', 'comments']
-        read_only_fields = ['pet_seeker', 'pet_listing', 'shelter', 'form', 'created_at', 'updated_at', 'comments']
