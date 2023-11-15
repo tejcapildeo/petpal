@@ -9,6 +9,7 @@ from accounts.api.permissions import IsShelterUser, IsSeekerUser
 from notifications.serializers import NotificationSerializer, NotificationUpdateSerializer
 from notifications.models import Notification
 from rest_framework import viewsets, mixins
+
 from rest_framework.pagination import PageNumberPagination
 
 
