@@ -30,4 +30,5 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', include('petlistings.urls')),
     path('', include('comments.urls')),
+    path('', include('notifications.urls')),
 ]
